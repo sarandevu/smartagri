@@ -1,0 +1,166 @@
+PROJECT: Farm Digital Twin with Predictive Irrigation & Automation
+
+--------------------------------------------------
+OVERVIEW
+--------------------------------------------------
+This project simulates and controls an intelligent irrigation system.
+
+The system:
+- Collects real-time data from sensors
+- Processes environmental and soil conditions
+- Predicts future soil behavior
+- Makes irrigation decisions
+- Automatically controls water flow
+
+Core workflow:
+Sensor Data → Process → Predict → Decide → Act → Feedback
+
+--------------------------------------------------
+SENSORS USED
+--------------------------------------------------
+
+1. Soil Moisture Sensor (Capacitive v1.2)
+   - Measures: Soil moisture (%)
+   - Role: Primary irrigation decision input
+
+2. DHT11 Sensor
+   - Measures: Temperature (°C), Humidity (%)
+   - Role: Affects evaporation and drying rate
+
+3. Light Sensor (BH1750 / LDR)
+   - Measures: Light intensity (lux)
+   - Role: Determines sun exposure impact
+
+4. Water Flow Sensor (YF-S201)
+   - Measures: Water flow rate (L/min)
+   - Role: Tracks water usage and validates irrigation
+
+--------------------------------------------------
+INPUT DATA TO BACKEND (FROM ESP32 / FRONTEND)
+--------------------------------------------------
+
+Each request to backend must include:
+
+{
+  "zone_id": "A",
+  "moisture": float (0–100),
+  "temperature": float (°C),
+  "humidity": float (%),
+  "light_intensity": float (lux),
+  "rain_probability": float (%),
+  "mode": "AUTO" or "MANUAL"
+}
+
+--------------------------------------------------
+DATABASE DATA (WHAT WILL BE STORED)
+--------------------------------------------------
+
+Each entry:
+
+- zone_id
+- moisture
+- temperature
+- humidity
+- light_intensity
+- rain_probability
+- decision
+- pump_status
+- water_flow_rate
+- timestamp
+
+--------------------------------------------------
+CORE LOGIC
+--------------------------------------------------
+
+1. STATUS DETECTION
+
+IF moisture < 30 → CRITICAL
+IF moisture < 60 → MODERATE
+ELSE → GOOD
+
+--------------------------------------------------
+
+2. PREDICTION LOGIC
+
+IF temperature > 32 AND humidity < 40:
+    drying_rate = FAST
+    prediction = "Dry in 2 hours"
+
+ELSE IF temperature > 30:
+    drying_rate = MEDIUM
+    prediction = "Dry in 4 hours"
+
+ELSE:
+    drying_rate = LOW
+    prediction = "Stable"
+
+--------------------------------------------------
+
+3. WEATHER-BASED DECISION
+
+IF rain_probability > 70:
+    decision = "DELAY"
+
+ELSE IF moisture < 30:
+    decision = "IRRIGATE"
+
+ELSE:
+    decision = "NO_ACTION"
+
+--------------------------------------------------
+
+4. AUTO CONTROL LOGIC
+
+IF mode == "AUTO":
+    IF decision == "IRRIGATE":
+        pump_status = "ON"
+    ELSE:
+        pump_status = "OFF"
+
+IF mode == "MANUAL":
+    pump_status = controlled manually
+
+--------------------------------------------------
+
+5. FLOW LOGIC
+
+IF pump_status == "ON":
+    water_flow_rate > 0 (simulate or real)
+
+IF pump_status == "OFF":
+    water_flow_rate = 0
+
+--------------------------------------------------
+
+OUTPUT FROM BACKEND
+--------------------------------------------------
+
+{
+  "zone_id": "A",
+  "status": "CRITICAL / MODERATE / GOOD",
+  "prediction": "Dry in X hours",
+  "decision": "IRRIGATE / DELAY / NO_ACTION",
+  "pump_status": "ON / OFF",
+  "water_flow_rate": float
+}
+
+--------------------------------------------------
+
+SYSTEM GOAL
+--------------------------------------------------
+
+- Provide accurate irrigation decisions
+- Reduce water usage
+- Predict future soil conditions
+- Enable automated control
+- Represent farm digitally using zones
+
+--------------------------------------------------
+
+KEY DESIGN PRINCIPLE
+--------------------------------------------------
+
+System prioritizes:
+- Decision accuracy over raw sensor precision
+- Zone-based sampling over full coverage
+- Multi-sensor fusion over single sensor dependency

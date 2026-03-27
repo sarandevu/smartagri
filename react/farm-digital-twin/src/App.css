@@ -1,0 +1,68 @@
+/* ──────────────────────────────────────────────
+   App Layout
+   ────────────────────────────────────────────── */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  margin-left: 240px;
+  padding: 32px 36px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 1280px;
+}
+
+/* ── Header ─── */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.app-header__title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.app-header__subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Zones grid ─── */
+.zones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.empty-hint {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px;
+  font-size: 0.85rem;
+}
+
+/* ── Responsive ─── */
+@media (max-width: 768px) {
+  .app-main {
+    margin-left: 0;
+    padding: 20px 16px 40px;
+  }
+
+  .zones-grid {
+    grid-template-columns: 1fr;
+  }
+}

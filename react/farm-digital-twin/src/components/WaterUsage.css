@@ -1,0 +1,66 @@
+.water-usage__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.water-usage__card {
+  padding: 20px;
+}
+
+.water-usage__card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.water-usage__card-icon {
+  font-size: 1.2rem;
+}
+
+.water-usage__card-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.water-usage__value {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.water-usage__unit {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.water-usage__efficiency {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.water-usage__eff-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.water-usage__eff-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+  transition: width 0.6s ease;
+}
+
+.water-usage__eff-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-green);
+}

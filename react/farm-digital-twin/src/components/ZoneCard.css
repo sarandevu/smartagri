@@ -1,0 +1,132 @@
+.zone-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.zone-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.zone-card__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.zone-card__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.zone-card__dot--good {
+  background: var(--accent-green);
+  box-shadow: 0 0 6px var(--accent-green-glow);
+}
+.zone-card__dot--moderate {
+  background: var(--accent-yellow);
+  box-shadow: 0 0 6px var(--accent-yellow-glow);
+}
+.zone-card__dot--critical {
+  background: var(--accent-red);
+  box-shadow: 0 0 6px var(--accent-red-glow);
+  animation: pulse-glow 1.2s infinite;
+}
+
+/* Gauge */
+.zone-card__gauge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zone-card__gauge-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.zone-card__gauge-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.zone-card__gauge-fill--good {
+  background: var(--accent-green);
+}
+.zone-card__gauge-fill--moderate {
+  background: var(--accent-yellow);
+}
+.zone-card__gauge-fill--critical {
+  background: var(--accent-red);
+}
+
+.zone-card__gauge-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  min-width: 50px;
+  text-align: right;
+}
+
+.zone-card__label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: -8px;
+}
+
+/* Metrics */
+.zone-card__metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.zone-card__metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+}
+
+.zone-card__metric-icon {
+  font-size: 0.9rem;
+}
+
+/* Prediction */
+.zone-card__prediction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+  padding: 8px 12px;
+  background: rgba(6, 182, 212, 0.08);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--accent-cyan);
+}
+
+.zone-card__prediction-icon {
+  font-size: 1rem;
+}
+
+/* Actions */
+.zone-card__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-glass);
+}
+
+.btn--sm {
+  padding: 5px 12px;
+  font-size: 0.72rem;
+}

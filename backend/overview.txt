@@ -1,0 +1,155 @@
+PROJECT: Farm Digital Twin with Predictive Irrigation & Automation
+
+--------------------------------------------------
+KEY MOTIVE
+--------------------------------------------------
+
+The main goal of this project is to transform traditional irrigation
+from a reactive process into a predictive and automated system.
+
+Current systems only monitor soil conditions and require manual decisions.
+This project aims to:
+
+- Reduce water wastage
+- Improve crop health
+- Automate irrigation decisions
+- Provide intelligent insights using real-time data
+
+The system acts as a "digital brain" for the farm.
+
+--------------------------------------------------
+WHAT THE PROJECT DOES
+--------------------------------------------------
+
+The system creates a digital representation (Digital Twin) of a farm
+divided into multiple zones.
+
+It performs the following functions:
+
+1. Monitors real-time data from sensors:
+   - Soil moisture
+   - Temperature and humidity
+   - Light intensity
+   - Water flow
+
+2. Analyzes environmental and soil conditions
+
+3. Predicts future soil behavior:
+   - Drying rate
+   - Heat impact
+   - Moisture depletion
+
+4. Uses weather data to improve decisions:
+   - Avoid irrigation if rain is expected
+   - Adjust irrigation based on temperature
+
+5. Makes intelligent irrigation decisions:
+   - Irrigate
+   - Delay irrigation
+   - No action
+
+6. Automatically controls irrigation using relay
+
+7. Tracks water usage and system performance
+
+--------------------------------------------------
+UI DESIGN GOALS
+--------------------------------------------------
+
+The UI acts as a control center that helps users:
+
+- Understand current farm conditions
+- See future predictions
+- View system decisions
+- Monitor irrigation actions
+
+The UI should be:
+- Simple
+- Clear
+- Data-driven
+- Real-time
+
+--------------------------------------------------
+UI COMPONENTS (WHAT WILL BE BUILT)
+--------------------------------------------------
+
+1. Dashboard Overview
+   - Total zones
+   - Active alerts
+   - Pump status
+   - System mode (AUTO / MANUAL)
+
+--------------------------------------------------
+
+2. Zone Monitoring Cards
+   Each zone displays:
+   - Soil moisture (%)
+   - Temperature
+   - Status indicator:
+       GREEN → Good
+       YELLOW → Moderate
+       RED → Critical
+   - Prediction:
+       "Dry in X hours"
+
+--------------------------------------------------
+
+3. Alerts & Recommendations Panel
+   Displays:
+   - Dryness alerts
+   - Heat warnings
+   - Rain-based suggestions
+
+   Example:
+   - "Zone B will be dry in 3 hours"
+   - "Rain expected – irrigation delayed"
+
+--------------------------------------------------
+
+4. Irrigation Control Panel
+   - Pump status (ON / OFF)
+   - Mode toggle (AUTO / MANUAL)
+   - Manual override button
+
+--------------------------------------------------
+
+5. Water Usage Panel
+   - Current flow rate
+   - Total water used
+   - Efficiency insights
+
+--------------------------------------------------
+
+6. Weather Panel
+   - Rain probability
+   - Temperature forecast
+
+--------------------------------------------------
+
+7. Graph / Replay Section
+   - Moisture vs time
+   - Shows past behavior of zones
+
+--------------------------------------------------
+
+KEY UI PRINCIPLE
+--------------------------------------------------
+
+The UI should not just display data.
+
+It must answer:
+- What is happening?
+- What will happen?
+- What is the system doing about it?
+
+--------------------------------------------------
+
+FINAL GOAL
+--------------------------------------------------
+
+To build a smart irrigation system that:
+
+- Understands past conditions
+- Predicts future risks
+- Automatically takes action
+- Provides clear and useful insights to the user
