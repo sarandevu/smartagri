@@ -1,17 +1,39 @@
 """
 Farm Digital Twin — Backend API
 Predictive Irrigation & Automation System
+(FastAPI Version)
 """
 
 import sqlite3
 import random
 import os
+import asyncio
 from datetime import datetime
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Dict, Any
 
-app = Flask(__name__)
-CORS(app)
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+load_dotenv()
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+
+supabase: Client = None
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+app = FastAPI(title="Farm Digital Twin API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "farm.db")
 
@@ -23,7 +45,6 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def init_db():
     conn = get_db()
@@ -51,7 +72,25 @@ def init_db():
 
 
 # ──────────────────────────────────────────────
-# Core Logic  (exactly per plan.txt)
+# Pydantic Models for Input Validation
+# ──────────────────────────────────────────────
+
+class SensorPayload(BaseModel):
+    zone_id: str = "A"
+    moisture: float = 50.0
+    temperature: float = 25.0
+    humidity: float = 50.0
+    light_intensity: float = 300.0
+    rain_probability: float = 0.0
+    mode: str = "AUTO"
+
+class PumpPayload(BaseModel):
+    zone_id: str = "A"
+    action: str = "OFF"
+
+
+# ──────────────────────────────────────────────
+# Core Logic
 # ──────────────────────────────────────────────
 
 def detect_status(moisture: float) -> str:
@@ -81,40 +120,99 @@ def weather_decision(rain_probability: float, moisture: float) -> str:
 def auto_control(mode: str, decision: str) -> str:
     if mode == "AUTO":
         return "ON" if decision == "IRRIGATE" else "OFF"
-    return "OFF"  # manual default; overridden by /api/pump
+    return "OFF"
 
 
 def flow_rate(pump_status: str) -> float:
     if pump_status == "ON":
-        return round(random.uniform(1.5, 4.5), 2)  # simulated L/min
+        return round(random.uniform(1.5, 4.5), 2)
     return 0.0
+
+
+# ──────────────────────────────────────────────
+# Supabase Background Sync Task
+# ──────────────────────────────────────────────
+last_processed_id = None
+
+async def sync_supabase_to_sqlite():
+    global last_processed_id
+    print("🔄 Started Supabase Sync Background Task...")
+    while True:
+        try:
+            if supabase:
+                response = supabase.table("sensor_data").select("*").order("id", desc=True).limit(1).execute()
+                
+                if response.data:
+                    latest_row = response.data[0]
+                    current_id = latest_row.get("id")
+                    
+                    if current_id != last_processed_id:
+                        last_processed_id = current_id
+                        
+                        soil1 = latest_row.get("soil_moisture1", 0)
+                        soil2 = latest_row.get("soil_moisture_2", 0)
+                        
+                        # Convert analog to moisture %
+                        moist_1 = max(0, min(100, 100 - (soil1 / 4095.0) * 100))
+                        moist_2 = max(0, min(100, 100 - (soil2 / 4095.0) * 100))
+                        
+                        temperature = float(latest_row.get("temperature", 25))
+                        humidity = float(latest_row.get("humidity", 50))
+                        light = float(latest_row.get("light", 300))
+                        flow = float(latest_row.get("flow", 0.0))
+                        
+                        # Process both zones
+                        zones_to_process = [
+                            ("1", float(moist_1)), 
+                            ("2", float(moist_2))
+                        ]
+                        
+                        # Use same timestamp for both
+                        timestamp = datetime.utcnow().isoformat()
+                        
+                        conn = get_db()
+                        for z_id, moisture in zones_to_process:
+                            status = detect_status(moisture)
+                            drying_rate, prediction = predict_soil(temperature, humidity)
+                            
+                            rain_probability = 0.0 
+                            decision = weather_decision(rain_probability, moisture)
+                            pump_status = auto_control("AUTO", decision)
+                            
+                            conn.execute(
+                                """INSERT INTO sensor_logs
+                                   (zone_id, moisture, temperature, humidity, light_intensity,
+                                    rain_probability, status, prediction, drying_rate, decision,
+                                    pump_status, water_flow_rate, mode, timestamp)
+                                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                                (z_id, moisture, temperature, humidity, light,
+                                 rain_probability, status, prediction, drying_rate, decision,
+                                 pump_status, flow, "AUTO", timestamp),
+                            )
+                        conn.commit()
+                        conn.close()
+                        print(f"✅ Synced row {current_id} from Supabase. Created entries for Zone 1 and Zone 2.")
+        except Exception as e:
+            print(f"Error fetching from Supabase: {e}")
+            
+        await asyncio.sleep(5)
 
 
 # ──────────────────────────────────────────────
 # Routes
 # ──────────────────────────────────────────────
 
-@app.route("/api/sensor-data", methods=["POST"])
-def receive_sensor_data():
-    """Receive sensor readings, run logic, return decision & persist."""
-    data = request.get_json(force=True)
-
-    zone_id = data.get("zone_id", "A")
-    moisture = float(data.get("moisture", 50))
-    temperature = float(data.get("temperature", 25))
-    humidity = float(data.get("humidity", 50))
-    light_intensity = float(data.get("light_intensity", 300))
-    rain_probability = float(data.get("rain_probability", 0))
-    mode = data.get("mode", "AUTO").upper()
-
-    status = detect_status(moisture)
-    drying_rate, prediction = predict_soil(temperature, humidity)
-    decision = weather_decision(rain_probability, moisture)
-    pump_status = auto_control(mode, decision)
+@app.post("/api/sensor-data")
+def receive_sensor_data(data: SensorPayload):
+    """Receive legacy direct POSTs and process."""
+    status = detect_status(data.moisture)
+    drying_rate, prediction = predict_soil(data.temperature, data.humidity)
+    decision = weather_decision(data.rain_probability, data.moisture)
+    
+    pump_status = auto_control(data.mode.upper(), decision)
     water = flow_rate(pump_status)
     timestamp = datetime.utcnow().isoformat()
 
-    # Persist
     conn = get_db()
     conn.execute(
         """INSERT INTO sensor_logs
@@ -122,28 +220,28 @@ def receive_sensor_data():
             rain_probability, status, prediction, drying_rate, decision,
             pump_status, water_flow_rate, mode, timestamp)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-        (zone_id, moisture, temperature, humidity, light_intensity,
-         rain_probability, status, prediction, drying_rate, decision,
-         pump_status, water, mode, timestamp),
+        (data.zone_id, data.moisture, data.temperature, data.humidity, data.light_intensity,
+         data.rain_probability, status, prediction, drying_rate, decision,
+         pump_status, water, data.mode.upper(), timestamp),
     )
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "zone_id": zone_id,
+    return {
+        "zone_id": data.zone_id,
         "status": status,
         "prediction": prediction,
         "drying_rate": drying_rate,
         "decision": decision,
         "pump_status": pump_status,
         "water_flow_rate": water,
-        "mode": mode,
+        "mode": data.mode.upper(),
         "timestamp": timestamp,
-    })
+    }
 
 
-@app.route("/api/zones", methods=["GET"])
-def get_zones():
+@app.get("/api/zones")
+def get_zones() -> List[Dict[str, Any]]:
     """Return the latest state for every zone."""
     conn = get_db()
     rows = conn.execute(
@@ -154,11 +252,11 @@ def get_zones():
            ORDER BY zone_id"""
     ).fetchall()
     conn.close()
-    return jsonify([dict(r) for r in rows])
+    return [dict(r) for r in rows]
 
 
-@app.route("/api/zone/<zone_id>/history", methods=["GET"])
-def zone_history(zone_id):
+@app.get("/api/zone/{zone_id}/history")
+def zone_history(zone_id: str) -> List[Dict[str, Any]]:
     """Return the last 50 records for a zone (for charts)."""
     conn = get_db()
     rows = conn.execute(
@@ -166,26 +264,23 @@ def zone_history(zone_id):
         (zone_id,),
     ).fetchall()
     conn.close()
-    return jsonify([dict(r) for r in rows][::-1])  # oldest-first
+    return [dict(r) for r in rows][::-1]
 
 
-@app.route("/api/pump", methods=["POST"])
-def manual_pump():
-    """Manual pump override — sets pump ON/OFF for a zone."""
-    data = request.get_json(force=True)
-    zone_id = data.get("zone_id", "A")
-    action = data.get("action", "OFF").upper()
-
+@app.post("/api/pump")
+def manual_pump(payload: PumpPayload):
+    """Manual pump override."""
+    action = payload.action.upper()
+    
     conn = get_db()
-    # Fetch latest row for this zone to keep other fields
     row = conn.execute(
         "SELECT * FROM sensor_logs WHERE zone_id = ? ORDER BY id DESC LIMIT 1",
-        (zone_id,),
+        (payload.zone_id,),
     ).fetchone()
 
     if not row:
         conn.close()
-        return jsonify({"error": "Zone not found"}), 404
+        raise HTTPException(status_code=404, detail="Zone not found")
 
     water = flow_rate(action)
     timestamp = datetime.utcnow().isoformat()
@@ -196,7 +291,7 @@ def manual_pump():
             rain_probability, status, prediction, drying_rate, decision,
             pump_status, water_flow_rate, mode, timestamp)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-        (zone_id, row["moisture"], row["temperature"], row["humidity"],
+        (payload.zone_id, row["moisture"], row["temperature"], row["humidity"],
          row["light_intensity"], row["rain_probability"], row["status"],
          row["prediction"], row["drying_rate"], "MANUAL_OVERRIDE",
          action, water, "MANUAL", timestamp),
@@ -204,20 +299,19 @@ def manual_pump():
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "zone_id": zone_id,
+    return {
+        "zone_id": payload.zone_id,
         "pump_status": action,
         "water_flow_rate": water,
         "timestamp": timestamp,
-    })
+    }
 
 
-@app.route("/api/stats", methods=["GET"])
+@app.get("/api/stats")
 def dashboard_stats():
-    """Aggregate stats for the dashboard overview."""
+    """Aggregate stats."""
     conn = get_db()
 
-    # Latest per zone
     rows = conn.execute(
         """SELECT * FROM sensor_logs
            WHERE id IN (SELECT MAX(id) FROM sensor_logs GROUP BY zone_id)"""
@@ -233,20 +327,27 @@ def dashboard_stats():
 
     conn.close()
 
-    return jsonify({
+    return {
         "total_zones": total_zones,
         "active_alerts": active_alerts,
         "pumps_on": pumps_on,
         "total_water_used": round(total_water, 2),
         "zones": [dict(r) for r in rows],
-    })
+    }
 
 
 # ──────────────────────────────────────────────
-# Startup
+# Startup Initialization
 # ──────────────────────────────────────────────
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+    if supabase:
+        asyncio.create_task(sync_supabase_to_sqlite())
+    else:
+        print("⚠️ Supabase client not initialized (check .env file). Sync task disabled.")
 
 if __name__ == "__main__":
-    init_db()
-    print("🌱 Farm Digital Twin backend running on http://localhost:5000")
-    app.run(debug=True, port=5000)
+    import uvicorn
+    uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)
+

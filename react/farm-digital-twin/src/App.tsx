@@ -17,7 +17,7 @@ import MoistureChart from "./components/MoistureChart";
 import "./App.css";
 
 /* ── Simulated sensor payloads for demo ─── */
-const DEMO_ZONES = ["A", "B", "C", "D"];
+const DEMO_ZONES = ["1", "2"];
 
 function randomSensor(zoneId: string) {
   return {
@@ -95,7 +95,7 @@ export default function App() {
         {/* Header */}
         <header className="app-header">
           <div>
-            <h1 className="app-header__title">Farm Digital Twin</h1>
+            <h1 className="app-header__title">Digital Twin</h1>
             <p className="app-header__subtitle">
               Predictive Irrigation & Automation Dashboard
             </p>

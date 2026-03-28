@@ -22,8 +22,8 @@ const Sidebar: FC<SidebarProps> = ({ activeSection, onNavigate }) => {
       <div className="sidebar__brand">
         <span className="sidebar__logo">🌿</span>
         <div>
-          <h1 className="sidebar__title">FarmTwin</h1>
-          <span className="sidebar__subtitle">Digital Twin</span>
+          <h1 className="sidebar__title">Digital Twin</h1>
+          <span className="sidebar__subtitle">Dashboard</span>
         </div>
       </div>
 
