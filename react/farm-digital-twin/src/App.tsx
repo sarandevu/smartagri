@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  getStats,
+  supabase,
   togglePump,
   sendSensorData,
   type DashboardStats,
   type ZoneData,
 } from "./api";
+import { evaluateZone } from "./logic";
 import Sidebar from "./components/Sidebar";
 import DashboardOverview from "./components/DashboardOverview";
+import LandMap from "./components/LandMap";
 import ZoneCard from "./components/ZoneCard";
 import AlertsPanel from "./components/AlertsPanel";
 import IrrigationControl from "./components/IrrigationControl";
@@ -38,14 +40,33 @@ export default function App() {
   const [seeded, setSeeded] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  /* ── Fetch dashboard data ─── */
+  /* ── Fetch dashboard data directly from Supabase ─── */
   const refresh = useCallback(async () => {
     try {
-      const res = await getStats();
-      setStats(res.data);
-      setZones(res.data.zones ?? []);
+      const { data } = await supabase
+        .from('sensor_data')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(6); // Fetch 6 records to provide history tracking for the predictive models
+
+      if (data && data.length > 0) {
+        
+        // Pass the live arrays into our robust Predictive non-ML Logic Engine!
+        const z1 = evaluateZone("1", data, "soil_moisture1");
+        const z2 = evaluateZone("2", data, "soil_moisture_2");
+
+        const newZones = [z1, z2];
+        setZones(newZones);
+        setStats({
+          total_zones: 2,
+          active_alerts: newZones.filter(z => z.status === "CRITICAL").length,
+          pumps_on: newZones.filter(z => z.pump_status === "ON").length,
+          total_water_used: data[0].flow || 0,
+          zones: newZones
+        });
+      }
     } catch {
-      /* backend might not be running yet */
+      // ignore errors
     }
   }, []);
 
@@ -64,11 +85,27 @@ export default function App() {
     if (!seeded) seed();
   }, [seeded]);
 
-  /* ── Auto-refresh every 5 s ─── */
+  /* ── Realtime web sockets and fallback polling ─── */
   useEffect(() => {
     refresh();
+    
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'sensor_data' },
+        () => {
+          console.log("New sensor data INSERT captured via real-time!");
+          refresh();
+        }
+      )
+      .subscribe();
+
     const id = setInterval(refresh, 5000);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      supabase.removeChannel(channel);
+    };
   }, [refresh]);
 
   /* ── Pump toggle handler ─── */
@@ -108,6 +145,11 @@ export default function App() {
         {/* Sections */}
         <div ref={setRef("dashboard")}>
           <DashboardOverview stats={stats} />
+        </div>
+
+        {/* Farm Layout Simulator */}
+        <div ref={setRef("landmap")}>
+          <LandMap zones={zones} />
         </div>
 
         <div ref={setRef("zones")} className="zones-section">

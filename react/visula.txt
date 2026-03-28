@@ -1,0 +1,243 @@
+PROJECT: Global UI Theme System (Professional + Minimal + Intelligent)
+
+--------------------------------------------------
+CORE IDEA
+--------------------------------------------------
+
+Instead of applying colors randomly, the UI uses a centralized
+theme system that controls the entire application appearance.
+
+Goal:
+- Make UI look professional
+- Maintain consistency
+- Avoid over-coloring
+- Improve readability and focus
+
+--------------------------------------------------
+GLOBAL COLOR SYSTEM
+--------------------------------------------------
+
+BASE COLORS (Applied everywhere)
+
+Background: #0B132B
+Surface (Cards): #16213E
+Secondary Surface: #1C2541
+
+Border: #2A2E45
+
+--------------------------------------------------
+TEXT SYSTEM
+--------------------------------------------------
+
+Primary Text: #EAEAEA
+Secondary Text: #A0AEC0
+Disabled Text: #6B7280
+
+Rule:
+Text must always have high contrast with background.
+
+--------------------------------------------------
+ACCENT SYSTEM (CONTROLLED USAGE)
+--------------------------------------------------
+
+Primary Accent: #00FF9C
+Secondary Accent: #3A86FF
+
+Rule:
+Accent colors are used ONLY for:
+- Active states
+- Buttons
+- Highlights
+
+--------------------------------------------------
+STATUS COLOR SYSTEM (STRICTLY FUNCTIONAL)
+--------------------------------------------------
+
+Healthy: #00FF9C
+Warning: #FFC300
+Critical: #FF4C4C
+Info: #00CFFF
+
+Rule:
+Status colors must NOT be used decoratively.
+
+--------------------------------------------------
+GRADIENT SYSTEM (LIMITED USE)
+--------------------------------------------------
+
+Use gradient ONLY in:
+
+- Header
+- Selected components
+- Highlight sections
+
+Gradient:
+
+#141E30 → #243B55
+
+Avoid using gradients in:
+- Background
+- Text
+- All cards
+
+--------------------------------------------------
+GLOBAL UI BEHAVIOR RULES
+--------------------------------------------------
+
+1. MINIMAL COLOR RULE
+
+- 90% UI = neutral dark tones
+- 10% UI = accent or status colors
+
+--------------------------------------------------
+
+2. FOCUS-BASED COLORING
+
+Color appears ONLY when:
+- User interacts
+- State changes
+- Alert occurs
+
+--------------------------------------------------
+
+3. HIERARCHY THROUGH CONTRAST
+
+Instead of colors, use:
+
+- Size
+- Spacing
+- Opacity
+- Elevation
+
+--------------------------------------------------
+
+4. CONSISTENCY RULE
+
+Same element = same color everywhere
+
+Example:
+- All buttons → Primary Accent
+- All alerts → Status colors
+
+--------------------------------------------------
+
+GLOBAL COMPONENT STYLING
+--------------------------------------------------
+
+CARDS:
+
+- Background: #16213E
+- Border: subtle (#2A2E45)
+- Hover: slight brightness increase
+
+--------------------------------------------------
+
+BUTTONS:
+
+Primary:
+- Background: #00FF9C
+- Text: black
+- Hover: glow effect
+
+Secondary:
+- Border: #3A86FF
+- Text: #3A86FF
+
+--------------------------------------------------
+
+TOGGLES:
+
+ON:
+- Color: #00FF9C
+- Glow: subtle
+
+OFF:
+- Color: gray
+
+--------------------------------------------------
+
+ALERTS:
+
+Critical:
+- Border: #FF4C4C
+- Background: low opacity red
+
+--------------------------------------------------
+
+GRAPH STYLE:
+
+- Line: #00CFFF
+- Grid: subtle gray
+- Background: transparent
+
+--------------------------------------------------
+
+GLOBAL EFFECTS (PROFESSIONAL TOUCH)
+--------------------------------------------------
+
+1. SOFT GLOW
+
+Used for:
+- Active elements
+- Critical alerts
+
+Example:
+box-shadow: 0 0 10px rgba(0,255,156,0.3)
+
+--------------------------------------------------
+
+2. GLASSMORPHISM (LIMITED)
+
+- Background: rgba(255,255,255,0.05)
+- Blur: subtle
+
+Use ONLY in:
+- Header
+- Panels
+
+--------------------------------------------------
+
+3. SMOOTH TRANSITIONS
+
+- 200–300ms transition
+- No abrupt changes
+
+--------------------------------------------------
+
+APP-WIDE TRANSFORMATION STRATEGY
+--------------------------------------------------
+
+To upgrade the whole app:
+
+1. Replace all background colors with base theme
+2. Replace all text with defined text colors
+3. Remove random colors
+4. Apply accent colors ONLY to actions
+5. Apply status colors ONLY to states
+
+--------------------------------------------------
+
+WHAT THIS ACHIEVES
+--------------------------------------------------
+
+- Clean and modern look
+- Professional consistency
+- Better readability
+- Strong visual hierarchy
+- Improved user trust
+
+--------------------------------------------------
+
+FINAL DESIGN PRINCIPLE
+--------------------------------------------------
+
+"Color is used to communicate meaning, not decoration"
+
+--------------------------------------------------
+
+CONCLUSION
+--------------------------------------------------
+
+This theme system transforms the application into a
+professional, minimal, and visually appealing product
+without affecting backend logic or performance.

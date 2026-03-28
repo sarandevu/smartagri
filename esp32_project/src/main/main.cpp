@@ -1,4 +1,5 @@
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <Wire.h>
 #include <BH1750.h>
@@ -29,7 +30,7 @@ volatile int pulseCount = 0;
 float flowRate = 0;
 
 // Thresholds
-int soilThreshold = 1000;
+int soilThreshold = 5000;
 float tempThreshold = 25.0;
 float humidityThreshold = 50.0;
 float lightThreshold = 2000.0;
@@ -58,6 +59,12 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect(true);
   delay(100);
+
+  // Fallback Public DNS: Overrides corrupted local Hotspot Router resolutions
+  IPAddress primaryDNS(8, 8, 8, 8);
+  IPAddress secondaryDNS(1, 1, 1, 1);
+  WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, primaryDNS, secondaryDNS);
+
   WiFi.begin(ssid, password);
   Serial.print("Connecting WiFi");
 
@@ -67,6 +74,8 @@ void setup() {
   }
 
   Serial.println("\nConnected!");
+  delay(2000); // Network stack stabilization grace period
+  
   configTime(19800, 0, "pool.ntp.org", "time.nist.gov");
 }
 
@@ -93,10 +102,10 @@ void loop() {
   bool soilDry = (soil1 < soilThreshold || soil2 < soilThreshold);
 
   if (soilDry) {
-    digitalWrite(RELAY_PIN, LOW);   // Relay/Buzzer ON (If your module is Active HIGH, change this to HIGH)
+    digitalWrite(RELAY_PIN, HIGH);   // Relay/Buzzer ON (If your module is Active HIGH, change this to HIGH)
     Serial.println("Irrigation ON (Buzzer/Pump Active)");
   } else {
-    digitalWrite(RELAY_PIN, HIGH);  // Relay/Buzzer OFF (If your module is Active HIGH, change this to LOW)
+    digitalWrite(RELAY_PIN, LOW);  // Relay/Buzzer OFF (If your module is Active HIGH, change this to LOW)
     Serial.println("Irrigation OFF");
   }
 
@@ -117,9 +126,11 @@ void loop() {
 
   // 📡 Send to Supabase
   if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
+    WiFiClientSecure client;
+    client.setInsecure(); // Skip SSL certificate validation
 
-    http.begin(server);
+    HTTPClient http;
+    http.begin(client, server);
     http.addHeader("Content-Type", "application/json");
     http.addHeader("apikey", apiKey);
     http.addHeader("Authorization", String("Bearer ") + apiKey);

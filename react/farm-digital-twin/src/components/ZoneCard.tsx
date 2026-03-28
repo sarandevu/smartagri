@@ -18,7 +18,7 @@ const ZoneCard: FC<Props> = ({ zone, onTogglePump }) => {
   const moisturePct = Math.min(100, Math.max(0, zone.moisture));
 
   return (
-    <div className="zone-card glass-card animate-in" id={`zone-card-${zone.zone_id}`}>
+    <div className={`zone-card glass-card animate-in ${zone.status === "CRITICAL" ? "glass-card--critical" : ""}`} id={`zone-card-${zone.zone_id}`}>
       {/* Header */}
       <div className="zone-card__header">
         <h3 className="zone-card__name">Zone {zone.zone_id}</h3>
@@ -60,11 +60,26 @@ const ZoneCard: FC<Props> = ({ zone, onTogglePump }) => {
         </div>
       </div>
 
-      {/* Prediction */}
+      {/* Prediction & Confidence */}
       <div className="zone-card__prediction">
         <span className="zone-card__prediction-icon">⏳</span>
         <span>{zone.prediction}</span>
       </div>
+      
+      {zone.confidence && (
+        <div style={{ padding: "0 1.25rem 1rem", marginTop: "-0.5rem" }}>
+          <div style={{ marginBottom: "0.4rem" }}>
+            <span className={`badge badge--${zone.confidence === "HIGH" ? "good" : zone.confidence === "MEDIUM" ? "moderate" : "critical"}`} style={{ fontSize: "0.65rem" }}>
+              Analytic Confidence: {zone.confidence}
+            </span>
+          </div>
+          {zone.reason && (
+            <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.4 }}>
+              <strong>AI Reasoning:</strong> {zone.reason}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Decision + pump */}
       <div className="zone-card__actions">
@@ -72,12 +87,12 @@ const ZoneCard: FC<Props> = ({ zone, onTogglePump }) => {
           {zone.decision.replace("_", " ")}
         </span>
         <button
-          className={`btn btn--${zone.pump_status === "ON" ? "danger" : "success"} btn--sm`}
+          className={`btn btn--${zone.pump_status === "ON" ? "success" : "ghost"} btn--sm`}
           onClick={() =>
             onTogglePump(zone.zone_id, zone.pump_status === "ON" ? "OFF" : "ON")
           }
         >
-          Pump {zone.pump_status === "ON" ? "⏹ OFF" : "▶ ON"}
+          Pump {zone.pump_status === "ON" ? "ON 🌊" : "OFF"}
         </button>
       </div>
     </div>

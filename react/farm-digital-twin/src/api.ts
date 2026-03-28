@@ -1,4 +1,9 @@
 import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
+
+export const SUPABASE_URL = "https://lotlrsthxzldecynghbc.supabase.co";
+export const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvdGxyc3RoeHpsZGVjeW5naGJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTYxMjcsImV4cCI6MjA5MDE3MjEyN30.Lsy68LfPDz8cLpLbdEa0oG9TwSK9VbsPYLr-UT_hlp4";
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const api = axios.create({
   baseURL: "http://localhost:5000/api",
@@ -31,6 +36,8 @@ export interface ZoneData {
   water_flow_rate: number;
   mode: string;
   timestamp: string;
+  confidence?: string;
+  reason?: string;
 }
 
 export interface DashboardStats {

@@ -1,0 +1,47 @@
+================================================================================
+SMART FARM DIGITAL TWIN — ARCHITECTURE & LOGIC EXPLANATION
+================================================================================
+
+This document explains the four core logical engines actively deployed to run the Real-Time Predictive Irrigation System.
+
+--------------------------------------------------------------------------------
+1. PREDICTIVE IRRIGATION ENGINE (NO-ML FRAMEWORK)
+[Location: react/farm-digital-twin/src/logic.ts]
+--------------------------------------------------------------------------------
+Rather than deploying an offline, resource-heavy Python Machine Learning model, the system executes real-time mathematical heuristics directly in the React frontend via Supabase WebSockets.
+
+A. Environmental Drying Factor: 
+   The system doesn't just read soil sensors; it predicts the immediate future. It calculates a "Drying Factor" multiplier natively. If the Temperature is searing (>32°C) and Humidity is crashing (<45%), the system mathematically stretches its prediction window, knowing the soil will dry rapidly, and triggers the pump early. Conversely, if Rain Probability is heavily spiking, irrigation is heavily suppressed.
+
+B. Hardware Feedback Loop (System Confidence): 
+   The logic tracks its own historical performance. By analyzing the previous 6 records, it calculates the "Moisture Delta". If the water pump was recently activated, but the moisture level failed to rise by at least 5%, the system immediately recognizes a hardware malfunction (e.g., clogged hose, dry reservoir). It dynamically drops the "Analytic Confidence" score of the AI and flags an active warning on the frontend natively.
+
+C. Sensor Anomaly Detection: 
+   To prevent catastrophic flooding from a corrupted sensor wire, the engine tracks a rolling mathematical threshold. If the raw sensor integer swings wildly outside historical boundaries, the Confidence score immediately bottoms out to "LOW", preventing blind automation.
+
+--------------------------------------------------------------------------------
+2. LIVE WEBSOCKET DATA STREAMING
+[Location: react/farm-digital-twin/src/App.tsx]
+--------------------------------------------------------------------------------
+The system entirely bypasses traditional REST API polling. It establishes a raw, sub-second WebSocket tunnel (`postgres_changes`) directly to the Supabase database. The exact millisecond the physical ESP32 on the farm transmits an HTTP POST via its SSL client, Supabase pushes the event down the socket, and the React frontend hot-reloads the predictions graphically without the user ever refreshing the page.
+
+--------------------------------------------------------------------------------
+3. KINETIC DIGITAL TWIN SIMULATOR (UI/UX)
+[Location: react/farm-digital-twin/src/index.css & LandMap.tsx]
+--------------------------------------------------------------------------------
+The interface strictly enforces the "Minimal Colors, Maximum Meaning" design philosophy mapped in 'visula.txt'.
+
+A. 2D Spatial Simulation (LandMap):
+   Instead of basic charts, the actual mathematical outputs of the soil moisture algorithms are piped directly into CSS RGB interpolation matrices. As the soil drains, the physical 2D CSS blocks on your screen literally drain their Green channels, blending into a parched Red/Orange natively as moisture hits zero.
+
+B. Kinetic Morphing Glassmorphism:
+   The physical screen elements react energetically to touch inputs. Leveraging heavily manipulated CPU-accelerated CSS properties (`transform: scale`, `border-radius: 60px`, `cubic-bezier` timings), clicking any glass card forces it to instantaneously snap from a strict rectangle into a fluid, glowing oval. All analytical emojis/icons scale up violently by 180% and hue-shift their colors via dynamic drop-shadows on click to confirm operator inputs.
+
+--------------------------------------------------------------------------------
+4. NETWORK BYPASS PROTOCOLS (Hardware Node)
+[Location: esp32_project/src/main/main.cpp]
+--------------------------------------------------------------------------------
+Mobile hotspots and ISP routers frequently deploy IPv6 NAT64 gateways that blindly drop standard UDP Port 53 DNS queries emitted by tiny microcontrollers like the ESP32.
+
+To guarantee zero downtime on the farm:
+The firmware is hardcoded to intentionally reject the surrounding router's DCHP DNS payload. Instead, `WiFi.config` intercepts the connection natively and forces the C++ IP stack to resolve global addresses explicitly through Google's Global Proxy (`8.8.8.8`) and Cloudflare (`1.1.1.1`), permanently bypassing corrupted edge routers.
