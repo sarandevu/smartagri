@@ -132,6 +132,54 @@ def flow_rate(pump_status: str) -> float:
 # ──────────────────────────────────────────────
 # Supabase Background Sync Task
 # ──────────────────────────────────────────────
+
+def prepopulate_db():
+    conn = get_db()
+    count = conn.execute("SELECT COUNT(*) as c FROM sensor_logs").fetchone()["c"]
+    if count == 0 and supabase:
+        print("🔄 Prepopulating SQLite from Supabase history...")
+        try:
+            response = supabase.table("sensor_data").select("*").order("id", desc=True).limit(50).execute()
+            if response.data:
+                rows = response.data[::-1] # process oldest first
+                for row in rows:
+                    soil1 = row.get("soil_moisture1", 0)
+                    soil2 = row.get("soil_moisture_2", 0)
+                    moist_1 = max(0, min(100, 100 - (soil1 / 4095.0) * 100))
+                    moist_2 = max(0, min(100, 100 - (soil2 / 4095.0) * 100))
+                    temperature = float(row.get("temperature", 25))
+                    humidity = float(row.get("humidity", 50))
+                    light = float(row.get("light", 300))
+                    flow = float(row.get("flow", 0.0))
+                    timestamp = row.get("created_at") or datetime.utcnow().isoformat()
+                    
+                    zones_to_process = [("1", float(moist_1)), ("2", float(moist_2))]
+                    
+                    for z_id, moisture in zones_to_process:
+                        status = detect_status(moisture)
+                        drying_rate, prediction = predict_soil(temperature, humidity)
+                        decision = weather_decision(0.0, moisture)
+                        pump_status = auto_control("AUTO", decision)
+                        
+                        conn.execute(
+                            """INSERT INTO sensor_logs
+                               (zone_id, moisture, temperature, humidity, light_intensity,
+                                rain_probability, status, prediction, drying_rate, decision,
+                                pump_status, water_flow_rate, mode, timestamp)
+                               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                            (z_id, moisture, temperature, humidity, light,
+                             0.0, status, prediction, drying_rate, decision,
+                             pump_status, flow, "AUTO", timestamp),
+                        )
+                conn.commit()
+                # Update last processed ID
+                global last_processed_id
+                last_processed_id = response.data[0].get("id")
+                print("✅ Prepopulated history from Supabase.")
+        except Exception as e:
+            print(f"Error prepopulating: {e}")
+    conn.close()
+
 last_processed_id = None
 
 async def sync_supabase_to_sqlite():
@@ -343,6 +391,7 @@ def dashboard_stats():
 async def startup_event():
     init_db()
     if supabase:
+        prepopulate_db()
         asyncio.create_task(sync_supabase_to_sqlite())
     else:
         print("⚠️ Supabase client not initialized (check .env file). Sync task disabled.")
