@@ -48,8 +48,8 @@ export default function App() {
         setStats(response.data);
         setZones(response.data.zones || []);
       }
-    } catch {
-      // ignore errors
+    } catch (error) {
+      console.error("Failed to fetch from backend API:", error);
     }
   }, []);
 
