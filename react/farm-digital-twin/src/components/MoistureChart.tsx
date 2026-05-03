@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { supabase, type ZoneData } from "../api";
+import { supabase, getZoneHistory, type ZoneData } from "../api";
 import "./MoistureChart.css";
 
 interface Props {
@@ -28,37 +28,30 @@ const MoistureChart: FC<Props> = ({ zones }) => {
     if (!selectedZone) return;
     
     async function fetchHistory() {
-      const { data } = await supabase
-        .from('sensor_data')
-        .select('*')
-        .order('id', { ascending: false })
-        .limit(20); // Capture last 20 events for the graph
-
-      if (data && data.length > 0) {
-        // Reverse array so time goes left-to-right on Axis (oldest to newest)
-        const reversed = [...data].reverse();
-        
-        const mapped = reversed.map((row, i) => {
-          const rawM = selectedZone === "1" ? row.soil_moisture1 : row.soil_moisture_2;
-          const pctM = Math.max(0, Math.min(100, 100 - ((rawM || 0) / 4095.0) * 100));
-          
-          return {
-            index: i + 1,
-            time: row.created_at
-              ? new Date(row.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : `#${i + 1}`,
-            moisture: pctM,
-            temperature: row.temperature || 0,
-            humidity: row.humidity || 0,
-            light: row.light || 0,
-            flow: row.flow || 0
-          };
-        });
-        setHistory(mapped);
-      } else {
+      try {
+        const { data } = await getZoneHistory(selectedZone);
+        if (data && data.length > 0) {
+          const mapped = data.map((row, i) => {
+            return {
+              index: i + 1,
+              time: row.timestamp
+                ? new Date(row.timestamp).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : `#${i + 1}`,
+              moisture: row.moisture || 0,
+              temperature: row.temperature || 0,
+              humidity: row.humidity || 0,
+              light: row.light_intensity || 0,
+              flow: row.water_flow_rate || 0
+            };
+          });
+          setHistory(mapped);
+        } else {
+          setHistory([]);
+        }
+      } catch (e) {
         setHistory([]);
       }
     }

@@ -3,10 +3,10 @@ import {
   supabase,
   togglePump,
   sendSensorData,
+  getStats,
   type DashboardStats,
   type ZoneData,
 } from "./api";
-import { evaluateZone } from "./logic";
 import Sidebar from "./components/Sidebar";
 import DashboardOverview from "./components/DashboardOverview";
 import LandMap from "./components/LandMap";
@@ -40,30 +40,13 @@ export default function App() {
   const [seeded, setSeeded] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  /* ── Fetch dashboard data directly from Supabase ─── */
+  /* ── Fetch dashboard data from Backend ─── */
   const refresh = useCallback(async () => {
     try {
-      const { data } = await supabase
-        .from('sensor_data')
-        .select('*')
-        .order('id', { ascending: false })
-        .limit(6); // Fetch 6 records to provide history tracking for the predictive models
-
-      if (data && data.length > 0) {
-        
-        // Pass the live arrays into our robust Predictive non-ML Logic Engine!
-        const z1 = evaluateZone("1", data, "soil_moisture1");
-        const z2 = evaluateZone("2", data, "soil_moisture_2");
-
-        const newZones = [z1, z2];
-        setZones(newZones);
-        setStats({
-          total_zones: 2,
-          active_alerts: newZones.filter(z => z.status === "CRITICAL").length,
-          pumps_on: newZones.filter(z => z.pump_status === "ON").length,
-          total_water_used: data[0].flow || 0,
-          zones: newZones
-        });
+      const response = await getStats();
+      if (response.data) {
+        setStats(response.data);
+        setZones(response.data.zones || []);
       }
     } catch {
       // ignore errors
