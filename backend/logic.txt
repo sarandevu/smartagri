@@ -1,0 +1,223 @@
+PROJECT: Adaptive Predictive Irrigation Logic (Non-ML Model)
+
+--------------------------------------------------
+CORE IDEA
+--------------------------------------------------
+
+This system uses a rule-based predictive model enhanced with
+environmental understanding and feedback correction.
+
+It does NOT rely on machine learning, but instead uses:
+- Multi-sensor fusion
+- Environmental modeling
+- Short-term prediction
+- Feedback-based correction
+
+Goal:
+Improve irrigation accuracy over traditional reactive systems.
+
+--------------------------------------------------
+INPUT DATA (REAL-TIME)
+--------------------------------------------------
+
+From ESP32 sensors:
+
+- soil_moisture (raw / calibrated)
+- temperature (°C)
+- humidity (%)
+- light intensity (lux)
+- optional: pH
+
+--------------------------------------------------
+EXTERNAL INPUT
+--------------------------------------------------
+
+From Weather API:
+
+- rain_probability (%)
+- forecast_temperature
+- forecast_humidity
+
+--------------------------------------------------
+STEP 1: NORMALIZATION
+--------------------------------------------------
+
+Convert all inputs to comparable scale:
+
+moisture_norm = moisture / max_value
+temp_norm = temperature / 50
+humidity_norm = humidity / 100
+light_norm = light / 5000
+
+--------------------------------------------------
+STEP 2: DRYING FACTOR (ENVIRONMENT MODEL)
+--------------------------------------------------
+
+drying_factor =
+    (temp_norm * 0.4) +
+    ((1 - humidity_norm) * 0.3) +
+    (light_norm * 0.3)
+
+Meaning:
+- High temperature → faster evaporation
+- Low humidity → faster drying
+- High sunlight → faster drying
+
+--------------------------------------------------
+STEP 3: SHORT-TERM PREDICTION
+--------------------------------------------------
+
+Prediction window: 2–3 hours
+
+predicted_moisture =
+    moisture_norm - (drying_factor * prediction_window_factor)
+
+prediction_window_factor ≈ 0.2–0.3
+
+--------------------------------------------------
+STEP 4: WEATHER ADJUSTMENT
+--------------------------------------------------
+
+IF rain_probability > 70:
+    predicted_moisture += 0.2
+
+IF rain_probability > 85:
+    predicted_moisture += 0.35
+
+--------------------------------------------------
+STEP 5: pH ADJUSTMENT (OPTIONAL)
+--------------------------------------------------
+
+IF pH < 5.5 OR pH > 7.5:
+    irrigation_factor = 0.85
+ELSE:
+    irrigation_factor = 1.0
+
+predicted_moisture *= irrigation_factor
+
+--------------------------------------------------
+STEP 6: TREND ANALYSIS (FEEDBACK IMPROVEMENT)
+--------------------------------------------------
+
+Use last N readings (N = 5–10):
+
+trend =
+    average(previous_moisture) - current_moisture
+
+IF trend shows rapid drop:
+    increase drying_factor slightly
+
+--------------------------------------------------
+STEP 7: FEEDBACK CORRECTION (VERY IMPORTANT)
+--------------------------------------------------
+
+After irrigation:
+
+actual_change =
+    new_moisture - old_moisture
+
+IF actual_change < expected_change:
+    system_underperforming = TRUE
+    increase irrigation duration next time
+
+IF actual_change > expected_change:
+    reduce irrigation duration
+
+--------------------------------------------------
+STEP 8: RISK CLASSIFICATION
+--------------------------------------------------
+
+IF predicted_moisture < 0.3:
+    risk = "HIGH"
+
+ELIF predicted_moisture < 0.5:
+    risk = "MODERATE"
+
+ELSE:
+    risk = "LOW"
+
+--------------------------------------------------
+STEP 9: FINAL DECISION LOGIC
+--------------------------------------------------
+
+IF rain_probability > 70:
+    decision = "DELAY_IRRIGATION"
+
+ELIF predicted_moisture < 0.3:
+    decision = "IRRIGATE"
+
+ELIF predicted_moisture < 0.5:
+    decision = "MONITOR"
+
+ELSE:
+    decision = "NO_ACTION"
+
+--------------------------------------------------
+STEP 10: CONTROL OUTPUT
+--------------------------------------------------
+
+IF decision == "IRRIGATE":
+    pump_status = "ON"
+    duration = adaptive based on feedback
+
+ELSE:
+    pump_status = "OFF"
+
+--------------------------------------------------
+OUTPUT STRUCTURE
+--------------------------------------------------
+
+{
+  "zone_id": "A",
+  "predicted_moisture": value,
+  "drying_factor": value,
+  "risk_level": "LOW / MODERATE / HIGH",
+  "decision": "IRRIGATE / DELAY / MONITOR / NO_ACTION",
+  "pump_status": "ON / OFF",
+  "confidence": "MEDIUM",
+  "reason": "Explanation"
+}
+
+--------------------------------------------------
+WHY THIS IS ACCURATE
+--------------------------------------------------
+
+1. Uses multiple sensors instead of single input
+2. Models environmental drying behavior
+3. Adjusts based on weather forecast
+4. Uses historical trend (short-term memory)
+5. Corrects itself using feedback loop
+6. Avoids overwatering through prediction
+
+--------------------------------------------------
+LIMITATIONS
+--------------------------------------------------
+
+- Not a trained ML model
+- Depends on sensor calibration
+- Requires threshold tuning
+- Limited long-term prediction accuracy
+
+--------------------------------------------------
+FUTURE IMPROVEMENT
+--------------------------------------------------
+
+- Add ML model using collected dataset
+- Improve drying model using soil type
+- Add evapotranspiration equations
+- Improve prediction horizon
+
+--------------------------------------------------
+FINAL SYSTEM BEHAVIOR
+--------------------------------------------------
+
+Sense → Normalize → Model → Predict → Adjust → Decide → Act → Learn
+
+--------------------------------------------------
+CONCLUSION
+--------------------------------------------------
+
+This system improves irrigation accuracy by combining
+environmental modeling, short-term prediction, and
+feedback-based correction without requiring large
+training datasets.
